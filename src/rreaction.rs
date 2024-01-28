@@ -44,11 +44,9 @@ pub fn default_type_builder() -> TypesBuilder {
 
 pub fn get_files(path: PathBuf) -> Vec<PathBuf> {
     let mut files = Vec::new();
-    for result in Walk::new(path) {
-        if let Ok(entry) = result {
-            if entry.path().is_file() {
-                files.push(entry.path().to_path_buf());
-            }
+    for entry in Walk::new(path).flatten() {
+        if entry.path().is_file() {
+            files.push(entry.path().to_path_buf());
         }
     }
     files
@@ -57,8 +55,8 @@ pub fn get_files(path: PathBuf) -> Vec<PathBuf> {
 pub fn get_files_by_extensions(path: PathBuf, extensions: &[&str]) -> Vec<PathBuf> {
     let mut types_builder = TypesBuilder::new();
     for ext in extensions {
-        types_builder.add(*ext, &format!("*.{}", ext)).unwrap();
-        types_builder.select(&ext);
+        types_builder.add(ext, &format!("*.{}", ext)).unwrap();
+        types_builder.select(ext);
     }
     let types = types_builder.build().unwrap();
 
@@ -68,11 +66,9 @@ pub fn get_files_by_extensions(path: PathBuf, extensions: &[&str]) -> Vec<PathBu
 pub fn get_files_with_filter(path: PathBuf, extensions: Types) -> Vec<PathBuf> {
     let mut files = Vec::new();
 
-    for result in WalkBuilder::new(path).types(extensions).build() {
-        if let Ok(entry) = result {
-            if entry.path().is_file() {
-                files.push(entry.path().to_path_buf());
-            }
+    for entry in WalkBuilder::new(path).types(extensions).build().flatten() {
+        if entry.path().is_file() {
+            files.push(entry.path().to_path_buf());
         }
     }
 

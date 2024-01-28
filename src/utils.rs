@@ -1,12 +1,12 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-pub fn relative_to(path: &PathBuf, base: &PathBuf) -> PathBuf {
+pub fn relative_to(path: &Path, base: &Path) -> PathBuf {
     path.strip_prefix(base)
         .unwrap_or_else(|_| panic!("Base is not a prefix of path"))
         .to_path_buf()
 }
 
-pub fn all_relative_to(paths: &[PathBuf], base: &PathBuf) -> Vec<PathBuf> {
+pub fn all_relative_to(paths: &[PathBuf], base: &Path) -> Vec<PathBuf> {
     paths
         .iter()
         .map(|path| relative_to(path, base))
