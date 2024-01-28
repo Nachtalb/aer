@@ -6,4 +6,10 @@ use std::path::PathBuf;
 pub struct Args {
     #[clap(short, long, required = true)]
     pub path: PathBuf,
+
+    #[clap(short, long, default_value = "localhost")]
+    pub redis_host: String,
+
+    #[clap(short, long, default_value = "6379")]
+    pub redis_port: u16,
 }

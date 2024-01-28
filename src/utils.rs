@@ -1,4 +1,6 @@
+use md5;
 use std::path::{Path, PathBuf};
+use std::{fs::File, io, io::Read};
 
 pub fn relative_to(path: &Path, base: &Path) -> PathBuf {
     path.strip_prefix(base)
@@ -11,6 +13,13 @@ pub fn all_relative_to(paths: &[PathBuf], base: &Path) -> Vec<PathBuf> {
         .iter()
         .map(|path| relative_to(path, base))
         .collect::<Vec<PathBuf>>()
+}
+
+pub fn compute_md5(path: &Path) -> io::Result<String> {
+    let mut file = File::open(path)?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer)?;
+    Ok(format!("{:x}", md5::compute(buffer)))
 }
 
 #[cfg(test)]
@@ -42,5 +51,15 @@ mod tests {
                 PathBuf::from("b/e")
             ]
         );
+    }
+
+    #[test]
+    fn test_compute_md5() {
+        let path = PathBuf::from("test_data/file.txt");
+        let md5 = compute_md5(&path).unwrap();
+        assert_eq!(md5, "d41d8cd98f00b204e9800998ecf8427e"); // Funny how this md5 was auto
+                                                             // inserted by Copilot. Really makes
+                                                             // you think about leaking data
+                                                             // through LLM training sets. 🤔
     }
 }
