@@ -12,17 +12,11 @@ While not implemented yet that's at least the goal. Basically a replacement of
 ```sh
 # requisites
 cargo install cargo-watch
-# code analysis
-rustup component add clippy
 ```
 
 ```sh
 # Run
-cargo watch -x run -- --path "/path/to/folder"
-# Test
-cargo watch -x test
-# Code analysis
-cargo watch -x clippy
+cargo watch -x 'test && cargo run -- --path "/path/to/folder"'
 
 # File serve with nginx
 docker compose up -d
