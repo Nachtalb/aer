@@ -229,6 +229,8 @@ dependencies = [
  "env_logger",
  "ignore",
  "lazy_static",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

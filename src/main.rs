@@ -14,6 +14,7 @@ async fn main() -> std::io::Result<()> {
     println!("Starting server at http://localhost:9999");
     HttpServer::new(move || {
         App::new()
+            .service(actix_files::Files::new("/media", &shared_args.path).show_files_listing())
             .wrap(Logger::default())
             .app_data(web::Data::new(shared_args.clone()))
             .configure(route_config)

@@ -49,33 +49,27 @@
         .then((files) => files.forEach(showFile));
 
       function showFile(file) {
-        const fileType = file.slice(file.lastIndexOf(".") + 1);
         let mediaFile;
 
-        switch (fileType) {
-          case "jpg":
-          case "jpeg":
-          case "png":
-          case "webp":
-          case "gif":
+        switch (file.type_) {
+          case "image":
             mediaFile = document.createElement("img");
             break;
-          case "mp4":
-          case "webm":
+          case "video":
             mediaFile = document.createElement("video");
             mediaFile.controls = true;
             break;
-          case "mp3":
-          case "flac":
+          case "audio":
             mediaFile = document.createElement("audio");
             mediaFile.controls = true;
             break;
           default:
-            console.error("Unsupported file type", fileType);
+            console.error("Unsupported file type", file.type_);
             return;
         }
 
-        mediaFile.src = mediaPrefix + file;
+        mediaFile.src = file.url;
+        mediaFile.alt = file.name;
         const thumbnail = document.createElement("div");
         thumbnail.classList.add("thumbnail");
         thumbnail.appendChild(mediaFile);
