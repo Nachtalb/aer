@@ -14,7 +14,6 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(shared_args.clone()))
-            .service(fs::Files::new("/media/", shared_args.path.clone()).show_files_listing())
             .configure(route_config)
     })
     .bind(("0.0.0.0", 9999))?

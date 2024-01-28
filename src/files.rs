@@ -5,11 +5,7 @@ use std::sync::Arc;
 #[actix_web::get("/files")]
 pub async fn files_index(data: web::Data<Arc<args::Args>>) -> impl Responder {
     let files = utils::all_relative_to(&rreaction::get_files(data.path.clone()), &data.path);
-    let mut response = String::new();
-    for file in files {
-        response.push_str(&format!("{}\n", file.display()));
-    }
-    response
+    HttpResponse::Ok().json(files)
 }
 
 #[actix_web::get("/files/{filter}")]
@@ -25,13 +21,7 @@ pub async fn files_filter(
         &rreaction::get_files_with_filter(data.path.clone(), types),
         &data.path,
     );
-    let mut response = String::new();
-    for file in files {
-        response.push_str(&format!("{}\n", file.display()));
-    }
-    HttpResponse::Ok()
-        .content_type("text/plain; charset=utf-8")
-        .body(response)
+    HttpResponse::Ok().json(files)
 }
 
 #[cfg(test)]
