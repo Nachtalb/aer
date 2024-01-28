@@ -12,6 +12,8 @@ While not implemented yet that's at least the goal. Basically a replacement of
 ```sh
 # requisites
 cargo install cargo-watch
+# code analysis
+rustup component add clippy
 ```
 
 ```sh
@@ -19,6 +21,8 @@ cargo install cargo-watch
 cargo watch -x run -- --path "/path/to/folder"
 # Test
 cargo watch -x test
+# Code analysis
+cargo watch -x clippy
 
 # File serve with nginx
 docker compose up -d
