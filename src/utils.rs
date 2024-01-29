@@ -1,3 +1,5 @@
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
@@ -21,6 +23,21 @@ pub fn fast_hash_str(input: &str) -> String {
     hasher.finish().to_string()
 }
 
+pub fn fast_hash_str_with_salt(input: &str, salt: &str) -> String {
+    let mut hasher = DefaultHasher::new();
+    input.hash(&mut hasher);
+    salt.hash(&mut hasher);
+    hasher.finish().to_string()
+}
+
+pub fn generate_random_string(len: usize) -> String {
+    thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(len)
+        .map(char::from)
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -28,6 +45,17 @@ mod tests {
     #[test]
     fn test_fast_hash_str() {
         fast_hash_str("hello world");
+    }
+
+    #[test]
+    fn test_generate_random_string() {
+        let random = generate_random_string(10);
+        assert_eq!(random.len(), 10);
+    }
+
+    #[test]
+    fn test_fast_hash_str_with_salt() {
+        fast_hash_str_with_salt("hello world", "salt");
     }
 
     #[test]

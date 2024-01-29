@@ -1,8 +1,13 @@
-use crate::{args, rreaction, utils};
+use crate::{args, rreaction, upload, utils};
 use actix_web::{web, HttpResponse, Responder};
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::Arc;
+
+lazy_static! {
+    static ref SECRET: String = utils::generate_random_string(8);
+}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 enum FileType {
@@ -39,6 +44,7 @@ struct FileInfo {
     type_: FileType,
     extension: String,
     hash: String,
+    runtime_hash: String,
 }
 
 impl FileInfo {
@@ -57,6 +63,7 @@ impl FileInfo {
             .to_lowercase();
 
         let hash = utils::fast_hash_str(&relative_path);
+        let runtime_hash = utils::fast_hash_str_with_salt(&relative_path, &SECRET);
 
         Self {
             url,
@@ -65,8 +72,66 @@ impl FileInfo {
             type_,
             extension,
             hash,
+            runtime_hash,
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+struct UploadInfo {
+    path: String,
+    hash: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+struct UploadResponse {
+    url: String,
+    ok: bool,
+    error: Option<String>,
+}
+
+#[actix_web::post("/files")]
+pub async fn files_upload(
+    data: web::Data<Arc<args::Args>>,
+    info: web::Json<UploadInfo>,
+) -> impl Responder {
+    let path = data.path.clone().join(&info.path);
+    let hash = utils::fast_hash_str_with_salt(&info.path, &SECRET);
+
+    if hash != info.hash {
+        return HttpResponse::BadRequest().json(UploadResponse {
+            url: "".to_string(),
+            ok: false,
+            error: Some("Invalid hash".to_string()),
+        });
+    }
+
+    if !path.exists() {
+        return HttpResponse::NotFound().json(UploadResponse {
+            url: "".to_string(),
+            ok: false,
+            error: Some("File not found".to_string()),
+        });
+    }
+
+    let url = match upload::upload_file(&path, data.upload_url.clone(), data.upload_token.clone())
+        .await
+    {
+        Ok(url) => url,
+        Err(_) => {
+            return HttpResponse::InternalServerError().json(UploadResponse {
+                url: "".to_string(),
+                ok: false,
+                error: Some("Upload failed".to_string()),
+            })
+        }
+    };
+
+    HttpResponse::Ok().json(UploadResponse {
+        url,
+        ok: true,
+        error: None,
+    })
 }
 
 #[actix_web::get("/files")]
@@ -158,6 +223,8 @@ mod tests {
     async fn test_files_index() {
         let args = crate::args::Args {
             path: PathBuf::from("test_data"),
+            upload_url: "https://f.naa.gg".to_string(),
+            upload_token: "".to_string(),
         };
         let app = test::init_service(
             App::new()
@@ -180,6 +247,8 @@ mod tests {
     async fn test_files_filter() {
         let args = crate::args::Args {
             path: PathBuf::from("test_data"),
+            upload_url: "https://f.naa.gg".to_string(),
+            upload_token: "token".to_string(),
         };
         let app = test::init_service(
             App::new()
@@ -202,6 +271,8 @@ mod tests {
     async fn test_files_filter_invalid() {
         let args = crate::args::Args {
             path: PathBuf::from("test_data"),
+            upload_url: "https://f.naa.gg".to_string(),
+            upload_token: "token".to_string(),
         };
         let app = test::init_service(
             App::new()

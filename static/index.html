@@ -231,6 +231,7 @@
       const parser = new DOMParser();
 
       let hashMap = {};
+      let hashToFile = {};
       let shownItems = [];
 
       // Fetching all files
@@ -246,6 +247,7 @@
 
       function showFile(file) {
         hashMap[file.name] = file.hash;
+        hashToFile[file.hash] = file;
         shownItems.push(file.hash);
 
         let mediaFile;
@@ -412,8 +414,54 @@
         }, "image/jpeg");
       }
 
+      function getFromStorage(key) {
+        const value = localStorage.getItem(key);
+        if (value === null) {
+          return null;
+        }
+        return JSON.parse(value);
+      }
+
+      function insertToStorage(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+      }
+
+
       function upload(element) {
-        console.log("to implement");
+        const hash = element.id;
+        const file = hashToFile[element.id];
+        const path = file.path;
+
+        let url = getFromStorage(hash);
+
+        if (url === null) {
+          showToast("Uploading...");
+        } else {
+          showToast(`Uploaded to ${url}`);
+          copyToClipboard(url);
+          return;
+        }
+
+        fetch("/files", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            path,
+            hash: file.runtime_hash,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              showToast(`Reload the page and try again: ${data.error}`, "error");
+            } else {
+              showToast(`Uploaded to ${data.url}`);
+              copyToClipboard(data.url);
+              insertToStorage(hash, data.url);
+            }
+          });
       }
 
       searchInput.addEventListener("keyup", (event) => {
