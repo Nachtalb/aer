@@ -164,27 +164,6 @@
         background-color: var(--palette-action-hover);
       }
 
-      .btn-download {
-      }
-
-      .btn-download:hover {
-        background-color: var(--palette-action-hover);
-      }
-
-      .btn-copy {
-      }
-
-      .btn-copy:hover {
-        background-color: var(--palette-action-hover);
-      }
-
-      .btn-open {
-      }
-
-      .btn-open:hover {
-        background-color: var(--palette-action-hover);
-      }
-
       .action-buttons {
         display: flex;
         justify-content: center;
@@ -298,9 +277,11 @@
           </div>
           <div class="name">${file.name}</div>
           <div class="action-buttons">
-            <button class="btn btn-download"><i class="fa fa-download" aria-hidden="true"></i></button>
-            <button class="btn btn-copy"><i class="fa fa-copy" aria-hidden="true"></i></button>
-            <button class="btn btn-open"><i class="fa fa-external-link-alt" aria-hidden="true"></i></button>
+            <button class="btn btn-download" title="Download File"><i class="fa fa-download" aria-hidden="true"></i></button>
+            <button class="btn btn-copy" title="Copy URL"><i class="fa fa-copy" aria-hidden="true"></i></button>
+            <button class="btn btn-copy-image" title="Copy Image"><i class="fa fa-images" aria-hidden="true"></i></button>
+            <button class="btn btn-upload" title="Upload Image"><i class="fa fa-upload" aria-hidden="true"></i></button>
+            <button class="btn btn-open" title="Open File"><i class="fa fa-external-link-alt" aria-hidden="true"></i></button>
           </div>
         </div>
         `;
@@ -408,6 +389,33 @@
         });
       }
 
+      function copyMediaFile(element) {
+        // Copy the actual file to clipboard
+        const mediaFile = element.querySelector("img, video, audio");
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        const width = mediaFile.clientWidth;
+        const height = mediaFile.clientHeight;
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(mediaFile, 0, 0);
+        canvas.toBlob((blob) => {
+          navigator.clipboard.write([
+            new ClipboardItem({
+              [blob.type]: blob,
+            }),
+          ]);
+
+          showToast("Copied to clipboard");
+        }, "image/jpeg");
+      }
+
+      function upload(element) {
+        console.log("to implement");
+      }
+
       searchInput.addEventListener("keyup", (event) => {
         // only if a-z, A-Z, 0-9, backspace, space, enter, tab, delete, or double quote
         if (
@@ -450,6 +458,12 @@
           const media = item.querySelector(".media");
           const mediaFile = media.querySelector("img, video, audio");
           openFile(mediaFile.src);
+        } else if (target.classList.contains("btn-copy-image")) {
+          const item = target.closest(".item");
+          copyMediaFile(item);
+        } else if (target.classList.contains("btn-upload")) {
+          const item = target.closest(".item");
+          upload(item);
         }
       });
     </script>
