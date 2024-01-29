@@ -23,18 +23,27 @@
         /* Divider */
         --palette-divider: rgba(255, 255, 255, 0.12);
 
+        /* State */
+        --palette-state-error: rgba(207, 102, 121, 0.5);
+        --palette-state-warning: rgba(255, 205, 0, 0.5);
+        --palette-state-success: rgba(0, 230, 118, 0.5);
+        --palette-state-info: rgba(100, 181, 246, 0.5);
+
         /* Other */
         --item-width: 300px;
         --item-height: 250px;
 
         --padding: 8px;
-      }
-
-      body.dark {
+        --margin: calc(var(--padding) * 2);
+        --border-radius: 12px;
       }
 
       * {
         box-sizing: border-box;
+      }
+
+      *::selection {
+        background-color: var(--palette-action-selected);
       }
 
       body {
@@ -66,9 +75,41 @@
         padding: var(--padding);
       }
 
+      #search-container {
+        width: 100%;
+        margin-bottom: var(--margin);
+      }
+
+      #search {
+        width: 100%;
+      }
+
+      input {
+        background-color: var(--palette-background-paper);
+        color: var(--palette-text-secondary);
+        border: 1px solid var(--palette-divider);
+        border-radius: var(--border-radius);
+        padding: var(--padding);
+        font-size: 1em;
+      }
+
+      input::placeholder {
+        color: var(--palette-text-disabled);
+      }
+
+      input:hover {
+        border: 1px solid var(--palette-action-hover);
+      }
+
+      input:focus,
+      input:active {
+        outline: none;
+        border: 1px solid var(--palette-action-selected);
+      }
+
       #gallery {
         display: grid;
-        grid-gap: 20px;
+        grid-gap: var(--margin);
         grid-template-columns: repeat(auto-fit, minmax(var(--item-width), 1fr));
         grid-auto-rows: var(--item-height);
       }
@@ -83,7 +124,7 @@
         width: 100%;
         padding: var(--padding);
         transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
-        border-radius: 12px;
+        border-radius: var(--border-radius);
         border: 1px solid var(--palette-divider);
         background-color: var(--palette-background-paper);
         color: var(--palette-text-primary);
@@ -101,17 +142,17 @@
       }
 
       .name {
-        margin-top: 10px;
+        padding: var(--padding);
         color: var(--palette-text-secondary);
       }
 
       .btn {
-        margin: 5px;
+        margin: 0 var(--padding);
         border: none;
         cursor: pointer;
         background: transparent;
         padding: var(--padding);
-        border-radius: 12px;
+        border-radius: var(--border-radius);
 
         transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
 
@@ -162,7 +203,7 @@
       .toast {
         color: var(--palette-text-primary);
         background-color: var(--palette-background-default);
-        border-radius: 12px;
+        border-radius: var(--border-radius);
         margin-bottom: 10px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
         display: flex;
@@ -176,11 +217,29 @@
         height: 100%;
         padding: 10px 20px;
       }
+
+      .toast-error .toast-inner {
+        background-color: var(--palette-state-error);
+      }
+
+      .toast-warning .toast-inner {
+        background-color: var(--palette-state-warning);
+      }
+
+      .toast-success .toast-inner {
+        background-color: var(--palette-state-success);
+      }
+
+      .toast-info .toast-inner {
+        background-color: var(--palette-state-info);
+      }
     </style>
   </head>
   <body>
     <main id="content">
-      <h1>Gallery</h1>
+      <div id="search-container">
+        <input type="search" placeholder="Search..." id="search" autofocus />
+      </div>
       <div id="gallery"></div>
     </main>
 
@@ -189,14 +248,27 @@
       const toastContainer = document.querySelector("#toast-container");
       const gallery = document.querySelector("#gallery");
       const mediaPrefix = "http://localhost:9990/";
+      const searchInput = document.querySelector("#search");
       const parser = new DOMParser();
+
+      let hashMap = {};
+      let shownItems = [];
 
       // Fetching all files
       fetch("/files")
         .then((response) => response.json())
-        .then((files) => files.forEach(showFile));
+        .then((files) => files.filter((file) => file.type_ !== "other"))
+        .then((files) => {
+          hashMap = {};
+          shownItems = [];
+
+          files.forEach(showFile);
+        });
 
       function showFile(file) {
+        hashMap[file.name] = file.hash;
+        shownItems.push(file.hash);
+
         let mediaFile;
 
         switch (file.type_) {
@@ -220,7 +292,7 @@
         mediaFile.alt = file.name;
 
         const html = `
-        <div class="item ${file.hash}">
+        <div class="item" id="${file.hash}">
           <div class="media">
             ${mediaFile.outerHTML}
           </div>
@@ -235,6 +307,37 @@
 
         const item = parser.parseFromString(html, "text/html").body.firstChild;
         gallery.appendChild(item);
+      }
+
+      function fuzzySearch(term, list) {
+        // Split the term into words and phrases.
+        const segments = term.match(/"[^"]+"|\S+/g) || [];
+        console.log("#", term, "|", segments);
+
+        return list.filter(item => {
+          return segments.every(segment => {
+            const lowerItem = item.toLowerCase();
+
+            // Check if the segment is quoted for a literal match.
+            if (segment.startsWith('"') && segment.endsWith('"')) {
+              const literal = segment.slice(1, -1).toLowerCase();
+              return lowerItem.includes(literal);
+            } else {
+              // Fuzzy match for the segment.
+              let searchTermIndex = 0;
+              segment = segment.toLowerCase();
+              for (let i = 0; i < lowerItem.length; i++) {
+                if (lowerItem[i] === segment[searchTermIndex]) {
+                  searchTermIndex++;
+                }
+                if (searchTermIndex === segment.length) {
+                  return true;
+                }
+              }
+              return false;
+            }
+          });
+        });
       }
 
       function copyToClipboard(text) {
@@ -260,9 +363,12 @@
         showToast("Opened");
       }
 
-      function showToast(message) {
+      function showToast(message, type) {
         const toast = document.createElement("div");
         toast.classList.add("toast");
+        if (type !== undefined) {
+          toast.classList.add(`toast-${type}`);
+        }
         const toastInner = document.createElement("div");
         toastInner.classList.add("toast-inner");
         toastInner.innerText = message;
@@ -272,6 +378,55 @@
           toastContainer.removeChild(toast);
         }, 3000);
       }
+
+      function difference(arr1, arr2) {
+        return arr1.filter((x) => !arr2.includes(x));
+      }
+
+      function search(query) {
+        let foundNames;
+        try {
+          foundNames = fuzzySearch(query, Object.keys(hashMap));
+        } catch (e) {
+          showToast("Invalid search", "error");
+          return;
+        }
+        const found = foundNames.map((name) => hashMap[name]);
+        const toHide = difference(shownItems, found);
+        const toShow = difference(found, shownItems);
+
+        shownItems = found;
+
+        toHide.forEach((item) => {
+          const element = document.getElementById(item);
+          element.style.display = "none";
+        });
+
+        toShow.forEach((item) => {
+          const element = document.getElementById(item);
+          element.style.display = "flex";
+        });
+      }
+
+      searchInput.addEventListener("keyup", (event) => {
+        // only if a-z, A-Z, 0-9, backspace, space, enter, tab, delete, or double quote
+        if (
+          !(
+            (event.keyCode >= 48 && event.keyCode <= 57) ||
+            (event.keyCode >= 65 && event.keyCode <= 90) ||
+            (event.keyCode >= 97 && event.keyCode <= 122) ||
+            event.keyCode === 8 ||
+            event.keyCode === 32 ||
+            event.keyCode === 13 ||
+            event.keyCode === 9 ||
+            event.keyCode === 46 ||
+            event.keyCode === 222
+          )
+        ) {
+          return;
+        }
+        search(event.target.value);
+      });
 
       document.addEventListener("click", (event) => {
         let target = event.target;
@@ -298,5 +453,5 @@
         }
       });
     </script>
-  </body>
 </html>
+  </body>

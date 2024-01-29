@@ -1,3 +1,5 @@
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
 pub fn relative_to(path: &Path, base: &Path) -> PathBuf {
@@ -13,9 +15,20 @@ pub fn all_relative_to(paths: &[PathBuf], base: &Path) -> Vec<PathBuf> {
         .collect::<Vec<PathBuf>>()
 }
 
+pub fn fast_hash_str(input: &str) -> String {
+    let mut hasher = DefaultHasher::new();
+    input.hash(&mut hasher);
+    hasher.finish().to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_fast_hash_str() {
+        fast_hash_str("hello world");
+    }
 
     #[test]
     fn test_relative_to() {

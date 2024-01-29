@@ -38,6 +38,7 @@ struct FileInfo {
     path: String,
     type_: FileType,
     extension: String,
+    hash: String,
 }
 
 impl FileInfo {
@@ -55,12 +56,15 @@ impl FileInfo {
             .to_string()
             .to_lowercase();
 
+        let hash = utils::fast_hash_str(&relative_path);
+
         Self {
             url,
             name,
             path: relative_path,
             type_,
             extension,
+            hash,
         }
     }
 }
